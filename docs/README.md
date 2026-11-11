@@ -17,4 +17,4 @@
 
 开发前的规则索引：[共享领域词典](domain.md)；[M1 座位与签到](rules/M1.md)、[M2 整室审批](rules/M2.md)、[M3 报修](rules/M3.md)、[D 公共层](rules/D.md)。这些文档从 V1 提取开发所需规则，不另立业务决定；[待决策问题](待决策问题_领域与模块规则.md)记录后续新发现的业务边界，本轮条目已处理。
 
-项目实施文档：[需求与验收追踪](requirements.md)、[计划与风险](plan.md)、[架构入口](architecture.md)、[关键决策](decisions.md)、[质量与验证](quality.md)、[环境与发布](operations.md)、[工程伦理](ethics.md)。[文档体系参考](多人多Agent文档体系参考.md)说明分类和现有文档的对应关系；这些新增文件中的计划与待办不代表已实施。
+项目实施文档：[需求与验收追踪](requirements.md)、[计划与风险](plan.md)、[架构入口](architecture.md)、[关键决策](decisions.md)、[质量与验证](quality.md)、[环境与发布总览](operations.md)、[环境与流水线搭建手册](环境与流水线搭建手册.md)、[实际搭建记录模板](环境与流水线搭建记录_模板.md)、[工程伦理](ethics.md)。[文档体系参考](多人多Agent文档体系参考.md)说明分类和现有文档的对应关系；这些新增文件中的计划与待办不代表已实施。
