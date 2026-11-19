@@ -21,12 +21,13 @@
 ./mvnw -B -ntp verify
 cd web
 npm ci
+npm run test
 npm run type-check
 npm run lint
 npm run build
 ```
 
-Maven `verify` 当前没有测试可运行；`npm run lint` 使用 Oxlint。业务测试、数据库迁移检查和 CI 尚未建立，后续任务须按 BP/AC 增补并记录真实执行结果。启动方式见[README](README.md)。
+Maven `verify` 运行后端 HTTP 健康检查测试；带 `-Pdb-integration` 并指定专用测试库时运行 PostgreSQL 连接测试。`npm run test` 运行 Web 路由渲染测试，`npm run lint` 使用 Oxlint。`.github/workflows/ci.yml` 在分支提交和指向 `main` 的 PR 上运行这些检查；业务测试与 Flyway 空库迁移检查仍须随对应模块实现补入。完整本地命令见[README](README.md)，CI 在远端首次运行前不得标为已通过。
 
 ## Git 与文档
 
