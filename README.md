@@ -1,6 +1,6 @@
 # 自习室预约系统
 
-本项目开发座位预约、签到、整室申请审批、教室与座位报修，以及教室管理和站内通知。业务需求已形成 V1；容器中已有开发工具、本地 PostgreSQL 开发/测试库、Vue Web 和一个 Spring Boot 后端的最小骨架。业务功能、自动测试、CI 和部署尚未实现。环境准备见[容器开发环境搭建记录](docs/task-reports/2026-11-11-容器开发环境搭建.md)，骨架搭建见[应用脚手架记录](docs/task-reports/2026-11-12-应用脚手架.md)。
+本项目开发座位预约、签到、整室申请审批、教室与座位报修，以及教室管理和站内通知。业务需求已形成 V1；容器中已有开发工具、本地 PostgreSQL 开发/测试库、Vue Web 和一个 Spring Boot 后端的最小骨架。已建立技术骨架自动测试和 CI 工作流，尚未在 GitHub runner 上执行；业务功能、业务验收测试和部署尚未实现。环境准备见[容器开发环境搭建记录](docs/task-reports/2026-11-11-容器开发环境搭建.md)，骨架搭建见[应用脚手架记录](docs/task-reports/2026-11-12-应用脚手架.md)。
 
 ## 系统组成
 
@@ -19,7 +19,15 @@
 
 ```sh
 ./mvnw -B -ntp verify
-cd web && npm ci && npm run type-check && npm run lint && npm run build
+cd web && npm ci && npm run test && npm run type-check && npm run lint && npm run build
+```
+
+本地 PostgreSQL 集成测试需使用**独立测试库**。以下路径和库名只适用于本容器；其他成员使用自己的测试库私有配置，切勿指向开发库或生产库。CI 使用临时 PostgreSQL 服务运行同一项检查。
+
+```sh
+./mvnw -B -ntp -Pdb-integration \
+  -Dspring.config.additional-location=file:/opt/room-reservation/secrets/application-rr-local-test.properties \
+  -Dtest.database.name=rr_local_test verify
 ```
 
 在仓库根目录启动后端；将示例配置路径替换为本机绝对路径。后端默认只监听本机的 18080 端口；其他机器可用 `--server.port=<端口>` 覆盖。另开终端在 `web/` 运行 `npm run dev -- --host 127.0.0.1`，打开终端打印的地址。
@@ -32,7 +40,7 @@ java -jar target/room-reservation-0.1.0-SNAPSHOT.jar --spring.config.additional-
 |---|---:|---|
 | 单个 Spring Boot 应用 | 18080 | `/actuator/health` |
 
-Web 当前只有占位首页，尚未接入后端；健康接口只证明后端可启动，不能代表业务功能或模块协作已实现。更多运行现状见[运行总览](docs/operations.md)。
+Web 当前只有占位首页，尚未接入后端；健康接口和 PostgreSQL 连通测试不能代表业务功能或模块协作已实现。Web 与后端的 HTTP API 另行约定。更多运行现状见[运行总览](docs/operations.md)。
 
 ## 阅读入口
 

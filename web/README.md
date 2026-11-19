@@ -7,9 +7,10 @@ Vue 3、Vite 和 TypeScript 的最小入口。当前首页只占位；业务页�
 ```sh
 npm ci
 npm run dev -- --host 127.0.0.1
+npm run test
 npm run type-check
 npm run lint
 npm run build
 ```
 
-`npm run lint` 只检查；需要自动修复时才使用 `npm run lint:fix`。依赖版本以 `package-lock.json` 为准。
+`npm run test` 使用 Vitest 验证根路由的页面渲染；后续页面按相应 BP/AC 增补测试。`npm run lint` 只检查；需要自动修复时才使用 `npm run lint:fix`。依赖版本以 `package-lock.json` 为准。

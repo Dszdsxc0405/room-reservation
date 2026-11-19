@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: rr_ci
+          POSTGRES_USER: rr_ci
+          POSTGRES_PASSWORD: ci-${{ github.run_id }}
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U rr_ci -d rr_ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://127.0.0.1:5432/rr_ci
+      SPRING_DATASOURCE_USERNAME: rr_ci
+      SPRING_DATASOURCE_PASSWORD: ci-${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Build and run backend tests
+        run: ./mvnw -B -ntp -Pdb-integration -Dtest.database.name=rr_ci verify
+
+  web:
+    name: Web checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24.12.0'
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Run Web tests
+        run: npm run test
+      - name: Check types
+        run: npm run type-check
+      - name: Lint
+        run: npm run lint
+      - name: Build Web
+        run: npm run build
