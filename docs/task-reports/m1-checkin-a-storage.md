@@ -23,3 +23,9 @@
 ## 人工验收
 
 - 验收人及结论：成员 A（任务发起用户，2026-11-20）已查看 A 的 diff 与报告，确认预约存储字段及约束、锁顺序，以及给 B 的预锁编码比对接线点，并授权提交本 A 分支改动。此确认不代表 B 的签到逻辑或 E/F 接口已完成联调，也不替代 B/E/F 人工确认、schema 评审及合并请求评审。
+
+## 包边界合入补充（已人工验收）
+
+- 合入 `task/backend-package-boundaries` 后，A 的锁和存储适配器移至 `seatbooking.internal.persistence`；与 D 对接的三个内部函数接口独立成文件，供 M1 应用层测试与后续装配使用。`BookingStorageIT` 位于 `seatbooking.internal.application`，保留原有签到与并发验证；没有更改 B 的签到规则或 A 的 SQL/锁顺序。
+- 在 A 工作树执行 `./mvnw -B -ntp verify`：10 项通过。执行 `./mvnw -B -ntp -Pdb-integration -Dspring.config.additional-location=file:/opt/room-reservation/secrets/application-rr-local-test.properties -Dtest.database.name=rr_local_test verify`：普通测试 10 项、PostgreSQL 集成测试 7 项通过。该测试库已在 Flyway V3；本轮验证了已有迁移的校验及现存表上的行为，未重新执行空库迁移。
+- 成员 A（本轮对话，2026-11-20）查看本次实际 diff 与验证结果后，明确回复“验收，完成本地合并提交”。此确认仅覆盖 A 分支包迁移和本地合并，不代替 B/E/F 接口复核、非作者评审或 BP/AC 验收。

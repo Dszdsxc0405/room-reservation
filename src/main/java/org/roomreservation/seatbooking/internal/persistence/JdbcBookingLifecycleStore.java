@@ -1,4 +1,4 @@
-package org.roomreservation.m1;
+package org.roomreservation.seatbooking.internal.persistence;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -8,21 +8,25 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
+import org.roomreservation.seatbooking.internal.application.BookingLifecycleStore;
+import org.roomreservation.seatbooking.internal.application.LifecycleAction;
+import org.roomreservation.seatbooking.internal.application.LockedBooking;
+import org.roomreservation.seatbooking.internal.domain.Booking;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 /** M1 persistence for B's lifecycle rules. The D adapters are supplied at composition time. */
-final class JdbcBookingLifecycleStore implements BookingLifecycleStore {
+public final class JdbcBookingLifecycleStore implements BookingLifecycleStore {
     private final JdbcTemplate jdbc;
     private final TransactionTemplate transactions;
     private final BookingCoordinationLocks locks;
     private final CodeFactLocker codeFacts;
     private final NoShowNoticeWriter notices;
 
-    JdbcBookingLifecycleStore(JdbcTemplate jdbc, PlatformTransactionManager transactionManager,
-                             BookingCoordinationLocks locks, CodeFactLocker codeFacts,
-                             NoShowNoticeWriter notices) {
+    public JdbcBookingLifecycleStore(JdbcTemplate jdbc, PlatformTransactionManager transactionManager,
+                                     BookingCoordinationLocks locks, CodeFactLocker codeFacts,
+                                     NoShowNoticeWriter notices) {
         this.jdbc = Objects.requireNonNull(jdbc);
         this.transactions = new TransactionTemplate(Objects.requireNonNull(transactionManager));
         this.locks = Objects.requireNonNull(locks);
@@ -146,22 +150,4 @@ final class JdbcBookingLifecycleStore implements BookingLifecycleStore {
 
     private record Location(String roomId, Instant start, LocalDate useDate) {}
     private record BookingRow(Booking booking, LocalDate useDate) {}
-}
-
-/** Adapter to E's DailyRoomCodeFacts; lock must be held in the same transaction. */
-@FunctionalInterface
-interface CodeFactLocker {
-    LockedCodeFact lockForBookingUseDate(String roomId, Instant bookingStart);
-}
-
-/** matches must be an in-memory comparison and may report unavailable code facts. */
-@FunctionalInterface
-interface LockedCodeFact {
-    boolean matches(String submittedCode);
-}
-
-/** Adapter to F's InAppNoticePort.enqueue; the event key is derived from booking ID and NO_SHOW. */
-@FunctionalInterface
-interface NoShowNoticeWriter {
-    void enqueueNoShow(String bookingId, String studentId, Instant cancelledAt);
 }

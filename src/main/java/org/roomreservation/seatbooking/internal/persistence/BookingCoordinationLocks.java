@@ -1,4 +1,4 @@
-package org.roomreservation.m1;
+package org.roomreservation.seatbooking.internal.persistence;
 
 import java.util.Objects;
 import org.springframework.jdbc.core.JdbcTemplate;

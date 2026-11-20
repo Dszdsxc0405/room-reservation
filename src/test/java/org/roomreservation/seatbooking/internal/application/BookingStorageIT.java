@@ -1,4 +1,4 @@
-package org.roomreservation.m1;
+package org.roomreservation.seatbooking.internal.application;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -18,6 +18,10 @@ import javax.sql.DataSource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.roomreservation.seatbooking.internal.persistence.BookingCoordinationLocks;
+import org.roomreservation.seatbooking.internal.persistence.CodeFactLocker;
+import org.roomreservation.seatbooking.internal.persistence.JdbcBookingLifecycleStore;
+import org.roomreservation.seatbooking.internal.persistence.NoShowNoticeWriter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.dao.DataIntegrityViolationException;

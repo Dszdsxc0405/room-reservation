@@ -1,2 +1,2 @@
 /** Repair requests, maintenance, and acceptance. */
-package org.roomreservation.m3;
+package org.roomreservation.maintenance;

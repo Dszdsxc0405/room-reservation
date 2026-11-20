@@ -1,4 +1,4 @@
-package org.roomreservation.m1;
+package org.roomreservation.seatbooking.internal.application;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -13,6 +13,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 import org.junit.jupiter.api.Test;
+import org.roomreservation.seatbooking.internal.domain.Booking;
 
 class BookingLifecycleTest {
     private static final Instant START = Instant.parse("2026-11-20T02:00:00Z");
