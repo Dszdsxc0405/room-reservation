@@ -28,3 +28,9 @@
 ## 人工验收
 
 - 验收人及结论：成员 E 已授权 E 分支在本地 worktree 提交（总调度于 2026-11-20 转达）。本次准许提交不代表 E 的生成提案成为规则，也不代表需求负责人已决定缺码提示或唯一性范围；BP/AC 人工验收未通过。
+
+## 包边界合入补充（已人工验收）
+
+- 合入 `task/backend-package-boundaries` 后，`DailyRoomCodeFacts`、`LockedDailyRoomCode` 和缺码异常留在 D 公开包 `platform`；`JdbcDailyRoomCodeFacts` 与测试移至 `platform.internal.persistence`。公开的 `LockedDailyRoomCode` 由实体类改为只读接口，实际句柄只在 D 内部构造，方法和事务内比对语义保持一致。V2 SQL 未修改。该公开类型变更仍需受影响的 M1 A/B 复核。
+- 在 E 工作树执行 `./mvnw -B -ntp verify`：13 项通过；使用专用 `rr_local_test` 执行 `-Pdb-integration verify`：13 项普通测试和 2 项 PostgreSQL 集成测试通过，含随机 schema 上的 V2 建表与编码行锁验证。原 `rr_e_test` 端口未响应，本轮改用仓库专用测试库。
+- 本轮任务负责人（用户，2026-11-20）查看 E 的实际 diff 与验证结果后，明确回复“验收 E，允许本地提交”。这仅覆盖 E 分支的包迁移和本地合并，不冒充成员 E 对公开类型变更的复核，也不代表 BP/AC 验收。

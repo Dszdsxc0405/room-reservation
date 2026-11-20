@@ -1,4 +1,4 @@
-package org.roomreservation.d;
+package org.roomreservation.platform.internal.persistence;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -13,6 +13,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.Test;
+import org.roomreservation.platform.DailyRoomCodeUnavailableException;
+import org.roomreservation.platform.LockedDailyRoomCode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;

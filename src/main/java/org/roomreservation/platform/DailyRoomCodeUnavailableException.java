@@ -1,4 +1,4 @@
-package org.roomreservation.d;
+package org.roomreservation.platform;
 
 import java.time.LocalDate;
 
