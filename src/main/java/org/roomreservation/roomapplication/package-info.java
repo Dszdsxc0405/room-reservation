@@ -1,2 +1,2 @@
 /** Whole-room applications and approvals. */
-package org.roomreservation.m2;
+package org.roomreservation.roomapplication;
