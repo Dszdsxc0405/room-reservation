@@ -1,0 +1,127 @@
+package org.roomreservation.m1;
+
+import java.time.Clock;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
+import java.util.Objects;
+
+/** M1's BP-02 state transitions. Persistence and the two D ports are supplied by their owners. */
+final class BookingLifecycle {
+    private final BookingLifecycleStore store;
+    private final DailyRoomCodeVerifier codes;
+    private final Clock clock;
+
+    BookingLifecycle(BookingLifecycleStore store, DailyRoomCodeVerifier codes, Clock clock) {
+        this.store = Objects.requireNonNull(store);
+        this.codes = Objects.requireNonNull(codes);
+        this.clock = Objects.requireNonNull(clock);
+    }
+
+    /** studentId must come from the authenticated server principal, never the request body. */
+    CheckInResult checkIn(String bookingId, String studentId, String code) {
+        Objects.requireNonNull(bookingId);
+        Objects.requireNonNull(studentId);
+        Objects.requireNonNull(code);
+        // The HTTP adapter must invoke this at server receipt, before any per-booking wait.
+        // A's shared store must also register this attempt before a later timeout can pass it.
+        Instant receivedAt = clock.instant();
+        return store.withLockedBooking(bookingId, LifecycleAction.CHECK_IN, receivedAt, locked -> {
+            Booking booking = locked.booking();
+            if (booking == null) return CheckInResult.NOT_FOUND;
+            if (!booking.studentId().equals(studentId)) return CheckInResult.NOT_FOUND;
+            if (booking.cancelled()) return CheckInResult.CANCELLED;
+            if (booking.checkedIn()) return CheckInResult.ALREADY_CHECKED_IN;
+
+            // The confirmed boundary uses the server's received whole second. Do not
+            // recheck opening policy: D can preserve a booking after immediate closure.
+            Instant receivedSecond = receivedAt.truncatedTo(ChronoUnit.SECONDS);
+            if (receivedSecond.isBefore(booking.start().minusSeconds(5 * 60))
+                    || !receivedSecond.isBefore(booking.start().plusSeconds(15 * 60 + 1))) {
+                return CheckInResult.OUTSIDE_WINDOW;
+            }
+            if (!codes.isValidForCheckIn(booking.roomId(), booking.start(), code, receivedAt)) {
+                return CheckInResult.INVALID_CODE;
+            }
+            locked.markCheckedIn(receivedAt);
+            return CheckInResult.CHECKED_IN;
+        });
+    }
+
+    TimeoutResult handleNoShow(String bookingId) {
+        Objects.requireNonNull(bookingId);
+        Instant triggeredAt = clock.instant();
+        return store.withLockedBooking(bookingId, LifecycleAction.NO_SHOW, triggeredAt, locked -> {
+            Booking booking = locked.booking();
+            if (booking == null) return TimeoutResult.NOT_FOUND;
+            if (booking.cancelled() || booking.checkedIn()) return TimeoutResult.ALREADY_RESOLVED;
+            // BP-02 explicitly names the first second after the inclusive deadline.
+            if (triggeredAt.truncatedTo(ChronoUnit.SECONDS)
+                    .isBefore(booking.start().plusSeconds(15 * 60 + 1))) {
+                return TimeoutResult.NOT_DUE;
+            }
+            // One transaction must cancel, record one violation, and enqueue one D notice.
+            // Delivery happens after commit; delivery failure must not undo these facts.
+            locked.cancelForNoShowAndRecordViolationAndNotice(triggeredAt);
+            return TimeoutResult.CANCELLED_FOR_NO_SHOW;
+        });
+    }
+
+    int handleDueBatch(int limit) {
+        if (limit < 1) throw new IllegalArgumentException("limit must be positive");
+        List<String> ids = store.findPotentialNoShows(clock.instant(), limit);
+        int cancelled = 0;
+        for (String id : ids) {
+            if (handleNoShow(id) == TimeoutResult.CANCELLED_FOR_NO_SHOW) cancelled++;
+        }
+        return cancelled;
+    }
+}
+
+enum CheckInResult {
+    CHECKED_IN, ALREADY_CHECKED_IN, NOT_FOUND, CANCELLED, OUTSIDE_WINDOW, INVALID_CODE
+}
+
+enum TimeoutResult {
+    CANCELLED_FOR_NO_SHOW, ALREADY_RESOLVED, NOT_DUE, NOT_FOUND
+}
+
+enum LifecycleAction {
+    CHECK_IN, NO_SHOW
+}
+
+record Booking(String id, String studentId, String roomId, Instant start,
+               boolean cancelled, boolean checkedIn) {
+    Booking {
+        Objects.requireNonNull(id);
+        Objects.requireNonNull(studentId);
+        Objects.requireNonNull(roomId);
+        Objects.requireNonNull(start);
+    }
+}
+
+/** Every callback runs in one database transaction with the booking row locked to commit.
+ * The adapter must sequence registered pre-deadline check-ins before later no-show commands.
+ */
+interface BookingLifecycleStore {
+    <T> T withLockedBooking(String bookingId, LifecycleAction action, Instant enteredAt,
+                            java.util.function.Function<LockedBooking, T> work);
+
+    /** Candidates are hints only; handleNoShow rechecks under the booking lock. */
+    List<String> findPotentialNoShows(Instant at, int limit);
+}
+
+interface LockedBooking {
+    Booking booking();
+
+    void markCheckedIn(Instant at);
+
+    /** Atomically change the booking, insert its unique violation, and persist a unique D notice. */
+    void cancelForNoShowAndRecordViolationAndNotice(Instant at);
+}
+
+/** D validates the code for the booking's use date in the school time zone. */
+interface DailyRoomCodeVerifier {
+    boolean isValidForCheckIn(String roomId, Instant bookingStart,
+                              String submittedCode, Instant decisionAt);
+}
