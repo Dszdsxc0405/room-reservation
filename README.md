@@ -11,7 +11,7 @@
 | M3 | 教室与座位报修、维修和验收 |
 | D（公共层） | 教室与座位主数据、配置、权限、站内消息和运营统计 |
 
-骨架使用 Vue 3、Vite、TypeScript、Java 21、Spring Boot 和 PostgreSQL。M1/M2/M3/D 是单个后端内部的业务模块，通过公开的 Java 接口协作；它们不需要各自启动进程。选型依据及尚待实测的容量见[技术方案](docs/13_技术方案_V1.md)。六人责任分配见[分工与数据归属](docs/12_六人分工与数据归属_V1.md)；公共层 D 是模块名，与成员代号 D 不同。
+骨架使用 Vue 3、Vite、TypeScript、Java 21、Spring Boot 和 PostgreSQL。M1/M2/M3/D 是单个后端内部的业务模块，通过公开的 Java 接口协作；它们不需要各自启动进程。选型依据及尚待实测的容量见[技术方案](docs/design/13_技术方案_V1.md)。六人责任分配见[分工与数据归属](docs/design/12_六人分工与数据归属_V1.md)；公共层 D 是模块名，与成员代号 D 不同。
 
 ## 本地启动
 
@@ -40,12 +40,12 @@ java -jar target/room-reservation-0.1.0-SNAPSHOT.jar --spring.config.additional-
 |---|---:|---|
 | 单个 Spring Boot 应用 | 18080 | `/actuator/health` |
 
-Web 当前只有占位首页，尚未接入后端；健康接口和 PostgreSQL 连通测试不能代表业务功能或模块协作已实现。Web 与后端的 HTTP API 另行约定。更多运行现状见[运行总览](docs/operations.md)。
+Web 当前只有占位首页，尚未接入后端；健康接口和 PostgreSQL 连通测试不能代表业务功能或模块协作已实现。Web 与后端的 HTTP API 另行约定。更多运行现状见[运行总览](docs/ops/operations.md)。
 
 ## 阅读入口
 
-1. 从[文档索引](docs/README.md)进入[需求基线 V1](docs/07_需求基线_V1.md)、[业务决策记录](docs/08_业务决策记录_V1.md)及对应 BP/AC。
-2. 开发前阅读[共享领域词典](docs/domain.md)、所属模块的 `docs/rules/` 文件，以及[跨模块接口](docs/14_跨模块接口_V1.md)。
+1. 从[文档索引](docs/README.md)进入[需求基线 V1](docs/business/07_需求基线_V1.md)、[业务决策记录](docs/business/08_业务决策记录_V1.md)及对应 BP/AC。
+2. 开发前阅读[共享领域词典](docs/domain.md)、所属模块的 `docs/rules/` 文件，以及[跨模块接口](docs/design/14_跨模块接口_V1.md)。
 3. 协作时遵守[所有 agent 共用规则](AGENTS.md)和[贡献流程](CONTRIBUTING.md)；具体任务再指定 `docs/agent-roles/` 中的角色说明。进度、质量、部署与伦理记录从[文档索引](docs/README.md)进入。
 
-需求变化先由需求负责人确定业务结果，再同步决策记录、BP/AC、模块规则与基线版本。后续阶段见[需求分析完成后的步骤](docs/15_需求分析后续步骤.md)。
+需求变化先由需求负责人确定业务结果，再同步决策记录、BP/AC、模块规则与基线版本。后续阶段见[需求分析完成后的步骤](docs/business/15_需求分析后续步骤.md)。
