@@ -6,6 +6,8 @@
 
 任务发起人在任务消息中写明目标及对应 BP/AC、主责模块和成员、agent 角色、允许修改的范围、相关接口及完成判据。例如：“实现 M1 的 AC-24，只改 M1，完成后交测试和评审”。这些信息说明本次要做什么；`AGENTS.md` 和角色文件规定各类任务怎样做。同一任务可覆盖前端和后端，不必按技术层固定分配成员。
 
+默认按[单任务开发与分阶段联调原则](docs/project/单任务开发与分阶段联调.md)推进：当前责任范围先用最小契约与测试替身独立开发，真实跨模块接入另开任务或取得任务发起人的明确授权。成员代号不是模块边界；即使在同一个 M1 模块内，也只修改本次指定的责任文件。不要因为依赖代码已经位于工作树，就顺带实现其他成员的任务。
+
 每项并行任务使用独立分支和独立 Git 工作目录（worktree）；不要让多个 agent 同时修改同一工作目录。开始前同步目标基线，结束时提交改动摘要和验证结果。需要改动共享接口、跨模块行为或数据库结构时，先告知相关模块负责人并核对接口和数据归属。
 
 ## 实现与检查
@@ -27,7 +29,7 @@ npm run lint
 npm run build
 ```
 
-Maven `verify` 运行后端 HTTP 健康检查测试；带 `-Pdb-integration` 并指定专用测试库时运行 PostgreSQL 连接测试。`npm run test` 运行 Web 路由渲染测试，`npm run lint` 使用 Oxlint。`.github/workflows/ci.yml` 在分支提交和指向 `main` 的 PR 上运行这些检查；业务测试与 Flyway 空库迁移检查仍须随对应模块实现补入。完整本地命令见[README](README.md)，CI 在远端首次运行前不得标为已通过。
+Maven `verify` 运行后端 HTTP 健康检查和已有的 M1/D 规则测试；带 `-Pdb-integration` 并指定专用测试库时运行 PostgreSQL 连接及已有的 M1/D 数据库集成测试。`npm run test` 运行 Web 路由渲染测试，`npm run lint` 使用 Oxlint。`.github/workflows/ci.yml` 在分支提交和指向 `main` 的 PR 上运行这些检查；尚未实现的业务场景测试及独立的 Flyway 空库迁移检查仍须随对应模块补入。完整本地命令见[README](README.md)，CI 在远端首次运行前不得标为已通过。
 
 ## Git 与文档
 

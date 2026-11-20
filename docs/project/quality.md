@@ -1,6 +1,6 @@
 # 质量与验证约定
 
-> 当前已确认 BP/AC，应用骨架已有本地自动测试和 CI 工作流文件；尚无业务自动测试、BP/AC 验收结果或 GitHub runner 运行结果。验收结果以[需求与验收追踪](../requirements.md)记录的真实证据为准；协作评审和提交顺序见[CONTRIBUTING](../../CONTRIBUTING.md)。
+> 当前已确认 BP/AC，应用骨架已有本地自动测试和 CI 工作流文件；B 分支已有部分 M1/D 业务自动测试，尚无签到端到端或 BP/AC 人工验收结果。GitHub runner 的执行状态须以对应工作流记录核对。验收结果以[需求与验收追踪](../requirements.md)记录的真实证据为准；协作评审和提交顺序见[CONTRIBUTING](../../CONTRIBUTING.md)。
 
 | 验证层次 | 重点行为 | 完成证据 |
 |---|---|---|

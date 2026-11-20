@@ -25,7 +25,7 @@
 
 ## 项目协作与质量
 
-[需求与验收追踪](requirements.md)记录 AC 的实际进度；[计划与风险](project/plan.md)、[质量与验证](project/quality.md)和[工程伦理](project/ethics.md)记录项目实施过程。[多人多 Agent 文档体系参考](project/多人多Agent文档体系参考.md)是文档分类的参考材料，现行目录以本索引为准。
+[需求与验收追踪](requirements.md)记录 AC 的实际进度；[计划与风险](project/plan.md)、[质量与验证](project/quality.md)、[单任务开发与分阶段联调原则](project/单任务开发与分阶段联调.md)和[工程伦理](project/ethics.md)记录项目实施过程。[多人多 Agent 文档体系参考](project/多人多Agent文档体系参考.md)是文档分类的参考材料，现行目录以本索引为准。
 
 ## 环境、发布与交接
 
