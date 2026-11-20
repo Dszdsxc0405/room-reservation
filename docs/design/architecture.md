@@ -24,8 +24,8 @@ Java 根包为 `org.roomreservation`。`RoomReservationApplication` 是启动类
 | M3 | `maintenance.MaintenancePort` | `maintenance.internal.application`、`domain`、`persistence` |
 | D | `platform.ResourceFactsPort`、`DailyRoomCodePort`、`MessagePort` | `platform.internal.resource`、`authorization`、`messaging`、`persistence` |
 
-表中是接口落点，不表示所有接口和内部目录均已有代码。当前已迁移 M1 签到状态转换、存储适配器、测试和四个模块的包声明；具体 Port 在相应能力接入且契约复核后创建。`web` 和 `workflow` 也在有实际入口或编排代码时建立。跨模块代码只能依赖被调用模块的公开接口和公开数据类型，不能导入其 `internal` 类型或 Repository；同一模块的内部层可以相互调用。数据库表和 Flyway 脚本仍由原模块负责。
+表中是接口落点，不表示所有接口和内部目录均已有代码。当前已迁移 M1 签到状态转换与存储适配器、D 编码锁定读取、对应测试和四个模块的包声明；具体 Port 在相应能力接入且契约复核后创建。`web` 和 `workflow` 也在有实际入口或编排代码时建立。跨模块代码只能依赖被调用模块的公开接口和公开数据类型，不能导入其 `internal` 类型或 Repository；同一模块的内部层可以相互调用。数据库表和 Flyway 脚本仍由原模块负责。
 
-这次迁移先落在现有主线文件。A 的 M1 存储适配器位于 `seatbooking.internal.persistence`，使用 M1 内部的存储契约；B 继续负责 `seatbooking.internal.application` 的签到逻辑；E 将 D 资源编码实现放到 `platform.internal.resource`/`persistence`，F 将 D 消息实现放到 `platform.internal.messaging`/`persistence`。E/F 的独立工作目录仍由各自负责人迁移，不在 A 的包迁移中搬动。接入时先核对公开 Port，再调整各自测试和引用。
+A 的 M1 存储适配器位于 `seatbooking.internal.persistence`，使用 M1 内部的存储契约；B 继续负责 `seatbooking.internal.application` 的签到逻辑；E 的 D 编码公开接口位于 `platform`，JDBC 实现位于 `platform.internal.persistence`；F 的消息实现待合入。接入时先核对公开 Port，再调整各自测试和引用。
 
 业务接口 URL、字段、表结构、部署端口和运行拓扑尚未设计完成；本地骨架端口见[运行文档](../ops/operations.md)。这些实现细节在接口细化与环境搭建时落到代码、迁移脚本及运行文档，不在此凭空确定。
