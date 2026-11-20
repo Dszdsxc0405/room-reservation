@@ -23,46 +23,45 @@ final class BookingLifecycle {
         Objects.requireNonNull(bookingId);
         Objects.requireNonNull(studentId);
         Objects.requireNonNull(code);
-        // The HTTP adapter must invoke this at server receipt, before any per-booking wait.
-        // A's shared store must also register this attempt before a later timeout can pass it.
-        Instant receivedAt = clock.instant();
-        return store.withLockedBooking(bookingId, LifecycleAction.CHECK_IN, receivedAt, locked -> {
+        return store.withLockedBooking(bookingId, LifecycleAction.CHECK_IN, locked -> {
+            // The adapter enters this callback only after acquiring the booking row lock.
+            Instant acceptedAt = clock.instant();
             Booking booking = locked.booking();
             if (booking == null) return CheckInResult.NOT_FOUND;
             if (!booking.studentId().equals(studentId)) return CheckInResult.NOT_FOUND;
             if (booking.cancelled()) return CheckInResult.CANCELLED;
             if (booking.checkedIn()) return CheckInResult.ALREADY_CHECKED_IN;
 
-            // The confirmed boundary uses the server's received whole second. Do not
+            // The confirmed boundary uses the server's accepted whole second. Do not
             // recheck opening policy: D can preserve a booking after immediate closure.
-            Instant receivedSecond = receivedAt.truncatedTo(ChronoUnit.SECONDS);
-            if (receivedSecond.isBefore(booking.start().minusSeconds(5 * 60))
-                    || !receivedSecond.isBefore(booking.start().plusSeconds(15 * 60 + 1))) {
+            Instant acceptedSecond = acceptedAt.truncatedTo(ChronoUnit.SECONDS);
+            if (acceptedSecond.isBefore(booking.start().minusSeconds(5 * 60))
+                    || !acceptedSecond.isBefore(booking.start().plusSeconds(15 * 60 + 1))) {
                 return CheckInResult.OUTSIDE_WINDOW;
             }
-            if (!codes.isValidForCheckIn(booking.roomId(), booking.start(), code, receivedAt)) {
+            if (!codes.isValidForCheckIn(booking.roomId(), booking.start(), code, acceptedAt)) {
                 return CheckInResult.INVALID_CODE;
             }
-            locked.markCheckedIn(receivedAt);
+            locked.markCheckedIn(acceptedAt);
             return CheckInResult.CHECKED_IN;
         });
     }
 
     TimeoutResult handleNoShow(String bookingId) {
         Objects.requireNonNull(bookingId);
-        Instant triggeredAt = clock.instant();
-        return store.withLockedBooking(bookingId, LifecycleAction.NO_SHOW, triggeredAt, locked -> {
+        return store.withLockedBooking(bookingId, LifecycleAction.NO_SHOW, locked -> {
+            Instant checkedAt = clock.instant();
             Booking booking = locked.booking();
             if (booking == null) return TimeoutResult.NOT_FOUND;
             if (booking.cancelled() || booking.checkedIn()) return TimeoutResult.ALREADY_RESOLVED;
             // BP-02 explicitly names the first second after the inclusive deadline.
-            if (triggeredAt.truncatedTo(ChronoUnit.SECONDS)
+            if (checkedAt.truncatedTo(ChronoUnit.SECONDS)
                     .isBefore(booking.start().plusSeconds(15 * 60 + 1))) {
                 return TimeoutResult.NOT_DUE;
             }
             // One transaction must cancel, record one violation, and enqueue one D notice.
             // Delivery happens after commit; delivery failure must not undo these facts.
-            locked.cancelForNoShowAndRecordViolationAndNotice(triggeredAt);
+            locked.cancelForNoShowAndRecordViolationAndNotice(checkedAt);
             return TimeoutResult.CANCELLED_FOR_NO_SHOW;
         });
     }
@@ -101,10 +100,10 @@ record Booking(String id, String studentId, String roomId, Instant start,
 }
 
 /** Every callback runs in one database transaction with the booking row locked to commit.
- * The adapter must sequence registered pre-deadline check-ins before later no-show commands.
+ * Acquire coordination and required D fact locks before the booking row lock.
  */
 interface BookingLifecycleStore {
-    <T> T withLockedBooking(String bookingId, LifecycleAction action, Instant enteredAt,
+    <T> T withLockedBooking(String bookingId, LifecycleAction action,
                             java.util.function.Function<LockedBooking, T> work);
 
     /** Candidates are hints only; handleNoShow rechecks under the booking lock. */

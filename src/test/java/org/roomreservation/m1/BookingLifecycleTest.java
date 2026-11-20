@@ -99,6 +99,48 @@ class BookingLifecycleTest {
     }
 
     @Test
+    void checkInArrivingInFinalSecondIsLateIfBookingLockOpensNextSecond() throws Exception {
+        CountDownLatch waitingForLock = new CountDownLatch(1);
+        store.beforeLock = waitingForLock::countDown;
+        clock.set(START.plusSeconds(900).plusNanos(999_999_999));
+        try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
+            store.lock.lock();
+            try {
+                var checkIn = executor.submit(() -> lifecycle.checkIn("booking-1", "student-1", "today"));
+                assertTrue(waitingForLock.await(5, TimeUnit.SECONDS));
+                clock.set(START.plusSeconds(901));
+                store.lock.unlock();
+                assertEquals(CheckInResult.OUTSIDE_WINDOW, checkIn.get(5, TimeUnit.SECONDS));
+            } finally {
+                if (store.lock.isHeldByCurrentThread()) store.lock.unlock();
+            }
+        }
+        assertEquals(0, store.checkIns);
+        assertEquals(TimeoutResult.CANCELLED_FOR_NO_SHOW, lifecycle.handleNoShow("booking-1"));
+        assertEquals(1, store.violations);
+    }
+
+    @Test
+    void timeoutRechecksTimeAfterWaitingForBookingLock() throws Exception {
+        CountDownLatch waitingForLock = new CountDownLatch(1);
+        store.beforeLock = waitingForLock::countDown;
+        clock.set(START.plusSeconds(900));
+        try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
+            store.lock.lock();
+            try {
+                var timeout = executor.submit(() -> lifecycle.handleNoShow("booking-1"));
+                assertTrue(waitingForLock.await(5, TimeUnit.SECONDS));
+                clock.set(START.plusSeconds(901));
+                store.lock.unlock();
+                assertEquals(TimeoutResult.CANCELLED_FOR_NO_SHOW, timeout.get(5, TimeUnit.SECONDS));
+            } finally {
+                if (store.lock.isHeldByCurrentThread()) store.lock.unlock();
+            }
+        }
+        assertEquals(1, store.violations);
+    }
+
+    @Test
     void checkInThatHoldsTheRowLockWinsOverConcurrentTimeout() throws Exception {
         CountDownLatch verifierEntered = new CountDownLatch(1);
         CountDownLatch releaseVerifier = new CountDownLatch(1);
@@ -172,6 +214,7 @@ class BookingLifecycleTest {
         private boolean roomNowClosed;
         private Instant start = START;
         private Runnable beforeCancel = () -> {};
+        private Runnable beforeLock = () -> {};
 
         void reset() {
             checkedIn = false;
@@ -187,7 +230,8 @@ class BookingLifecycleTest {
 
         @Override
         public <T> T withLockedBooking(String bookingId, LifecycleAction action,
-                                      Instant enteredAt, Function<LockedBooking, T> work) {
+                                      Function<LockedBooking, T> work) {
+            beforeLock.run();
             lock.lock();
             try {
                 return work.apply(new LockedBooking() {
