@@ -1,4 +1,4 @@
-package org.roomreservation.d;
+package org.roomreservation.platform.internal.messaging;
 
 import java.util.Objects;
 import org.springframework.context.annotation.Lazy;

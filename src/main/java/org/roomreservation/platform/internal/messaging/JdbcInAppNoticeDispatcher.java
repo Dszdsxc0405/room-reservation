@@ -1,4 +1,4 @@
-package org.roomreservation.d;
+package org.roomreservation.platform.internal.messaging;
 
 import java.util.List;
 import java.util.Objects;

@@ -1,4 +1,4 @@
-package org.roomreservation.d;
+package org.roomreservation.platform.internal.messaging;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -10,6 +10,10 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.roomreservation.platform.InAppNoticePort;
+import org.roomreservation.platform.NoticeEvent;
+import org.roomreservation.platform.NoticeEventConflictException;
+import org.roomreservation.platform.internal.persistence.JdbcInAppNoticePort;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.JdbcTemplate;

@@ -1,8 +1,11 @@
-package org.roomreservation.d;
+package org.roomreservation.platform.internal.persistence;
 
 import java.sql.Timestamp;
 import java.util.List;
 import java.util.Objects;
+import org.roomreservation.platform.InAppNoticePort;
+import org.roomreservation.platform.NoticeEvent;
+import org.roomreservation.platform.NoticeEventConflictException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Repository;

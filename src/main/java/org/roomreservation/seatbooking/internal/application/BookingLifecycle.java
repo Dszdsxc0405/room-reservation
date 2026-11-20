@@ -1,10 +1,11 @@
-package org.roomreservation.m1;
+package org.roomreservation.seatbooking.internal.application;
 
 import java.time.Clock;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Objects;
+import org.roomreservation.seatbooking.internal.domain.Booking;
 
 /** M1's BP-02 state transitions. Persistence and the two D ports are supplied by their owners. */
 final class BookingLifecycle {
@@ -83,40 +84,6 @@ enum CheckInResult {
 
 enum TimeoutResult {
     CANCELLED_FOR_NO_SHOW, ALREADY_RESOLVED, NOT_DUE, NOT_FOUND
-}
-
-enum LifecycleAction {
-    CHECK_IN, NO_SHOW
-}
-
-record Booking(String id, String studentId, String roomId, Instant start,
-               boolean cancelled, boolean checkedIn) {
-    Booking {
-        Objects.requireNonNull(id);
-        Objects.requireNonNull(studentId);
-        Objects.requireNonNull(roomId);
-        Objects.requireNonNull(start);
-    }
-}
-
-/** Every callback runs in one database transaction with the booking row locked to commit.
- * Acquire coordination and required D fact locks before the booking row lock.
- */
-interface BookingLifecycleStore {
-    <T> T withLockedBooking(String bookingId, LifecycleAction action,
-                            java.util.function.Function<LockedBooking, T> work);
-
-    /** Candidates are hints only; handleNoShow rechecks under the booking lock. */
-    List<String> findPotentialNoShows(Instant at, int limit);
-}
-
-interface LockedBooking {
-    Booking booking();
-
-    void markCheckedIn(Instant at);
-
-    /** Atomically change the booking, insert its unique violation, and persist a unique D notice. */
-    void cancelForNoShowAndRecordViolationAndNotice(Instant at);
 }
 
 /** D validates the code for the booking's use date in the school time zone. */

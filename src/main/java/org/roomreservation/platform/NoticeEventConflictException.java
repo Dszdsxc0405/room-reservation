@@ -1,4 +1,4 @@
-package org.roomreservation.d;
+package org.roomreservation.platform;
 
 /** The same event identity was reused for a different notice. */
 public class NoticeEventConflictException extends RuntimeException {

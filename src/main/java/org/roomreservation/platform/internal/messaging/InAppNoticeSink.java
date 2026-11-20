@@ -1,4 +1,4 @@
-package org.roomreservation.d;
+package org.roomreservation.platform.internal.messaging;
 
 /** D's post-commit destination. A failed call must roll back its own writes before retry. */
 interface InAppNoticeSink {

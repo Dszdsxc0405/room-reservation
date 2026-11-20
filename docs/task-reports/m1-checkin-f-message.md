@@ -23,3 +23,9 @@
 ## 人工验收
 
 - 验收人及结论：成员 F（用户），2026-11-20，确认本任务范围内三项：① 超时取消、违约及待发送消息同事务，入队保存失败回滚；业务提交后的投递失败只记录重试，不撤销处置；② 同一业务事件重试去重，同键不同内容报冲突；③ 本次交付 D 消息记录、去重与投递基础，定时提醒、自动投递及学生入口后续接线。以上范围认可并准予提交；未完成项不视为 BP/AC 验收通过。
+
+## 包边界合入补充（已人工验收）
+
+- 合入 `task/backend-package-boundaries` 后，`InAppNoticePort`、`NoticeEvent` 和事件冲突异常留在 D 公开包 `platform`；入队 JDBC 实现移至 `platform.internal.persistence`，投递器与收件箱写入实现移至 `platform.internal.messaging`。测试随实现移入消息内部目录；V3 SQL、事件去重和事务语义未修改。
+- 在 F 工作树执行 `./mvnw -B -ntp verify`：10 项通过；使用专用 `rr_local_test` 执行 `-Pdb-integration verify`：10 项普通测试和 2 项 PostgreSQL 集成测试通过，其中 1 项是 D 消息事务、去重与投递重试测试。原 `rr_f_test` 端口未响应，本轮改用仓库专用测试库和随机 schema。
+- 本轮任务负责人（用户，2026-11-20）查看 F 的实际 diff 与验证结果后，明确回复“验收 F，允许本地提交”。这仅覆盖 F 分支的包迁移和本地合并，不冒充成员 F 对公共接口的复核，也不代表 BP/AC 验收。
