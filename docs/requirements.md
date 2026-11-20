@@ -7,7 +7,7 @@ BP-02 的签到与超时状态转换已有单元测试，尚无数据库适配�
 | 流程与 AC | 实现 | 验证证据 | 状态 |
 |---|---|---|---|
 | [BP-01](business/00_BP-01_查询并预约_V1.md)：AC-01～06、24～28、35 | — | — | 未开发 |
-| [BP-02](business/01_BP-02_签到提醒与未签到处置_V1.md)：AC-09/10/30/32 | [签到与超时核心](../src/main/java/org/roomreservation/m1/BookingLifecycle.java)；数据库与 D 接口待接入 | [9 项 M1 单元测试](../src/test/java/org/roomreservation/m1/BookingLifecycleTest.java)；`./mvnw -B -ntp verify`（2026-11-20） | 开发中 |
+| [BP-02](business/01_BP-02_签到提醒与未签到处置_V1.md)：AC-09/10/30/32 | [签到与超时核心](../src/main/java/org/roomreservation/seatbooking/internal/application/BookingLifecycle.java)；数据库与 D 接口待接入 | [9 项 M1 单元测试](../src/test/java/org/roomreservation/seatbooking/internal/application/BookingLifecycleTest.java)；`./mvnw -B -ntp verify`（2026-11-20，包迁移后重跑） | 开发中 |
 | [BP-02](business/01_BP-02_签到提醒与未签到处置_V1.md)：AC-07/08/31/33/34 | — | — | 未开发 |
 | [BP-03](business/02_BP-03_空间与座位维护_V1.md)：AC-11～14 | — | — | 未开发 |
 | [BP-05](business/04_BP-05_系统配置与权限_V1.md)：AC-15～16、36 | — | — | 未开发 |
