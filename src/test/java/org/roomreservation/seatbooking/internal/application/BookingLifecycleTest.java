@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
@@ -58,12 +59,75 @@ class BookingLifecycleTest {
         assertEquals(TimeoutResult.ALREADY_RESOLVED, lifecycle.handleNoShow("booking-1"));
         assertEquals(CheckInResult.CANCELLED, lifecycle.checkIn("booking-1", "student-1", "today"));
         assertTrue(store.cancelled);
+        assertFalse(store.hasPersonalOccupancy()); // AC-31: B's cancellation releases this booking.
         assertEquals(1, store.violations);
         assertEquals(1, store.queuedNotices);
         assertThrows(RuntimeException.class, store::deliverQueuedNotices);
         assertTrue(store.cancelled);
         assertEquals(1, store.violations);
         assertEquals(1, store.queuedNotices);
+    }
+
+    @Test
+    void overdueTaskStillCancelsOnceAndDoesNotRestorePersonalOccupancy() {
+        clock.set(START.plusSeconds(60 * 60));
+        assertEquals(TimeoutResult.CANCELLED_FOR_NO_SHOW, lifecycle.handleNoShow("booking-1"));
+        assertFalse(store.hasPersonalOccupancy());
+        assertEquals(TimeoutResult.ALREADY_RESOLVED, lifecycle.handleNoShow("booking-1"));
+        assertEquals(1, store.violations);
+        assertEquals(1, store.queuedNotices);
+    }
+
+    @Test
+    void reminderMilestonesAreRecordedOnceAndDeliveryFailureDoesNotBlockTimeout() {
+        BookingReminders reminders = new BookingReminders(store, clock);
+        clock.set(START.minusSeconds(901));
+        assertEquals(ReminderResult.NOT_DUE, reminders.trigger("booking-1", ReminderKind.BEFORE_START));
+        clock.set(START.minusSeconds(900));
+        assertEquals(ReminderResult.QUEUED, reminders.trigger("booking-1", ReminderKind.BEFORE_START));
+        assertEquals(ReminderResult.ALREADY_QUEUED,
+                reminders.trigger("booking-1", ReminderKind.BEFORE_START));
+        assertEquals(1, store.reminderNotices);
+
+        clock.set(START.plusSeconds(599));
+        assertEquals(ReminderResult.NOT_DUE,
+                reminders.trigger("booking-1", ReminderKind.TEN_MINUTES_AFTER_START));
+        clock.set(START.plusSeconds(600));
+        assertEquals(ReminderResult.QUEUED,
+                reminders.trigger("booking-1", ReminderKind.TEN_MINUTES_AFTER_START));
+        assertEquals(ReminderResult.ALREADY_QUEUED,
+                reminders.trigger("booking-1", ReminderKind.TEN_MINUTES_AFTER_START));
+        assertEquals(2, store.reminderNotices);
+        assertThrows(RuntimeException.class, store::deliverQueuedReminders);
+
+        clock.set(START.plusSeconds(901));
+        assertEquals(TimeoutResult.CANCELLED_FOR_NO_SHOW, lifecycle.handleNoShow("booking-1"));
+        assertEquals(1, store.violations);
+        assertEquals(1, store.queuedNotices);
+        assertFalse(store.hasPersonalOccupancy());
+    }
+
+    @Test
+    void remindersIgnoreMissingCancelledCheckedInAndExpiredBookings() {
+        BookingReminders reminders = new BookingReminders(store, clock);
+        clock.set(START.minusSeconds(900));
+        assertEquals(ReminderResult.NOT_FOUND, reminders.trigger("missing", ReminderKind.BEFORE_START));
+        store.cancelled = true;
+        assertEquals(ReminderResult.NO_LONGER_ELIGIBLE,
+                reminders.trigger("booking-1", ReminderKind.BEFORE_START));
+        store.reset();
+        store.checkedIn = true;
+        clock.set(START.plusSeconds(600));
+        assertEquals(ReminderResult.NO_LONGER_ELIGIBLE,
+                reminders.trigger("booking-1", ReminderKind.TEN_MINUTES_AFTER_START));
+        store.reset();
+        clock.set(START);
+        assertEquals(ReminderResult.NO_LONGER_ELIGIBLE,
+                reminders.trigger("booking-1", ReminderKind.BEFORE_START));
+        clock.set(START.plusSeconds(901));
+        assertEquals(ReminderResult.NO_LONGER_ELIGIBLE,
+                reminders.trigger("booking-1", ReminderKind.TEN_MINUTES_AFTER_START));
+        assertEquals(0, store.reminderNotices);
     }
 
     @Test
@@ -205,13 +269,16 @@ class BookingLifecycleTest {
         @Override public Instant instant() { return instant.get(); }
     }
 
-    private static final class InMemoryStore implements BookingLifecycleStore {
+    private static final class InMemoryStore implements BookingLifecycleStore, ReminderStore {
         private final ReentrantLock lock = new ReentrantLock();
         private boolean checkedIn;
         private boolean cancelled;
+        private boolean personalOccupancy = true;
         private int checkIns;
         private int violations;
         private int queuedNotices;
+        private int reminderNotices;
+        private final EnumSet<ReminderKind> recordedReminders = EnumSet.noneOf(ReminderKind.class);
         private boolean roomNowClosed;
         private Instant start = START;
         private Runnable beforeCancel = () -> {};
@@ -220,9 +287,18 @@ class BookingLifecycleTest {
         void reset() {
             checkedIn = false;
             cancelled = false;
+            personalOccupancy = true;
             checkIns = 0;
             violations = 0;
             queuedNotices = 0;
+            reminderNotices = 0;
+            recordedReminders.clear();
+        }
+
+        boolean hasPersonalOccupancy() { return personalOccupancy; }
+
+        void deliverQueuedReminders() {
+            if (reminderNotices > 0) throw new RuntimeException("D reminder delivery unavailable");
         }
 
         void deliverQueuedNotices() {
@@ -249,6 +325,7 @@ class BookingLifecycleTest {
                     @Override public void cancelForNoShowAndRecordViolationAndNotice(Instant at) {
                         beforeCancel.run();
                         cancelled = true;
+                        personalOccupancy = false;
                         violations++;
                         queuedNotices++;
                     }
@@ -261,6 +338,29 @@ class BookingLifecycleTest {
         @Override public List<String> findPotentialNoShows(Instant at, int limit) {
             return !cancelled && !checkedIn && !at.isBefore(start.plusSeconds(901))
                     ? List.of("booking-1") : List.of();
+        }
+
+        @Override
+        public <T> T withLockedReminderBooking(String bookingId, Function<LockedReminderBooking, T> work) {
+            lock.lock();
+            try {
+                return work.apply(new LockedReminderBooking() {
+                    @Override public Booking booking() {
+                        return bookingId.equals("booking-1")
+                                ? new Booking("booking-1", "student-1", "room-1", start,
+                                        cancelled, checkedIn)
+                                : null;
+                    }
+
+                    @Override public boolean recordAndEnqueue(ReminderKind kind, Instant at) {
+                        if (!recordedReminders.add(kind)) return false;
+                        reminderNotices++;
+                        return true;
+                    }
+                });
+            } finally {
+                lock.unlock();
+            }
         }
     }
 }
